@@ -1,23 +1,23 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import { AppLayout } from './components/layout/AppLayout';
+import { AuthProvider, useAuth } from './AuthContext';
+import { AppLayout } from './AppLayout';
 
 // Faculty Pages
-import { FacultyDashboard } from './pages/faculty/FacultyDashboard';
-import { FacilityDirectory } from './pages/faculty/FacilityDirectory';
-import { FacilityDetail } from './pages/faculty/FacilityDetail';
-import { NewReservationWizard } from './pages/faculty/NewReservationWizard';
-import { MyReservations } from './pages/faculty/MyReservations';
-import { BookingHistory } from './pages/faculty/BookingHistory';
-import { SharedCalendar } from './pages/faculty/SharedCalendar';
+import { FacultyDashboard } from './FacultyDashboard';
+import { FacilityDirectory } from './FacilityDirectory';
+import { FacilityDetail } from './FacilityDetail';
+import { NewReservationWizard } from './NewReservationWizard';
+import { MyReservations } from './MyReservations';
+import { BookingHistory } from './BookingHistory';
+import { SharedCalendar } from './SharedCalendar';
 
 // Admin Pages
-import { AdminDashboard } from './pages/admin/AdminDashboard';
-import { RequestInbox } from './pages/admin/RequestInbox';
-import { FacilityManager } from './pages/admin/FacilityManager';
-import { EquipmentManager } from './pages/admin/EquipmentManager';
-import { ReportsAnalytics } from './pages/admin/ReportsAnalytics';
+import { AdminDashboard } from './AdminDashboard';
+import { RequestInbox } from './RequestInbox';
+import { FacilityManager } from './FacilityManager';
+import { EquipmentManager } from './EquipmentManager';
+import { ReportsAnalytics } from './ReportsAnalytics';
 
 // Dynamic Home Router: Shows Admin Dashboard for TU Admin, or Faculty Dashboard for Faculty User
 const DynamicHome: React.FC = () => {
