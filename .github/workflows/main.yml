@@ -1,4 +1,0 @@
-cd "C:\Users\kelly\Downloads\RIK SpaceHub"
-git add .
-git commit -m "feat: configure GitHub Pages deployment"
-git push origin main
