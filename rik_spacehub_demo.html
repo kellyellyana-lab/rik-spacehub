@@ -1,0 +1,2274 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RIK SpaceHub - Sistem Reservasi Fasilitas Terpadu RIK UI (Demo Mode)</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <!-- React & Babel Standalone -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            forest: {
+              950: '#0E1F0E',
+              900: '#132A13',
+              800: '#1B4332',
+              700: '#2D6A4F',
+              600: '#40916C',
+            },
+            sage: {
+              500: '#52B788',
+              400: '#74C69D',
+              300: '#95D5B2',
+              200: '#B7E4C7',
+              100: '#D8F3DC',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #F8F9FA; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  </style>
+</head>
+<body class="text-stone-800 antialiased selection:bg-emerald-800 selection:text-white">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useMemo } = React;
+
+    // --- SEED DATA ---
+    const FACULTIES_DATA = {
+      FK: { code: 'FK', name: 'Fakultas Kedokteran', shortName: 'Kedokteran', badgeBg: 'bg-emerald-100 text-emerald-800 border-emerald-300' },
+      FKG: { code: 'FKG', name: 'Fakultas Kedokteran Gigi', shortName: 'Kedokteran Gigi', badgeBg: 'bg-teal-100 text-teal-800 border-teal-300' },
+      FKM: { code: 'FKM', name: 'Fakultas Kesehatan Masyarakat', shortName: 'Kesmas', badgeBg: 'bg-indigo-100 text-indigo-800 border-indigo-300' },
+      FF: { code: 'FF', name: 'Fakultas Farmasi', shortName: 'Farmasi', badgeBg: 'bg-amber-100 text-amber-800 border-amber-300' },
+      FIK: { code: 'FIK', name: 'Fakultas Ilmu Keperawatan', shortName: 'Keperawatan', badgeBg: 'bg-sky-100 text-sky-800 border-sky-300' },
+      PUSAT_RIK: { code: 'PUSAT_RIK', name: 'Tata Usaha Pusat RIK UI', shortName: 'TU Pusat RIK', badgeBg: 'bg-green-100 text-green-900 border-green-400 font-semibold' },
+    };
+
+    const SEED_PERSONAS = [
+      {
+        id: 'usr_tu_admin',
+        name: 'Dr. Ratna Widjaja, M.Kes',
+        email: 'tu.rik@ui.ac.id',
+        role: 'tu_admin',
+        faculty: 'PUSAT_RIK',
+        identityNumber: '197508152002122001',
+        phone: '0812-3456-7890',
+        organization: 'Kantor Tata Usaha & Sarpras RIK UI',
+        avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
+      },
+      {
+        id: 'usr_fk_dimas',
+        name: 'Dimas Pratama',
+        email: 'dimas.pratama22@ui.ac.id',
+        role: 'faculty_user',
+        faculty: 'FK',
+        identityNumber: '2206014521',
+        phone: '0813-8899-1122',
+        organization: 'BEM Fakultas Kedokteran UI',
+        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+      },
+      {
+        id: 'usr_ff_aulia',
+        name: 'Aulia Zahra',
+        email: 'aulia.zahra23@ui.ac.id',
+        role: 'faculty_user',
+        faculty: 'FF',
+        identityNumber: '2306028910',
+        phone: '0812-7766-3344',
+        organization: 'HMD Farmasi UI (Divisi Ilmiah)',
+        avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
+      },
+      {
+        id: 'usr_fkg_nabila',
+        name: 'Nabila Putri Santoso',
+        email: 'nabila.putri22@ui.ac.id',
+        role: 'faculty_user',
+        faculty: 'FKG',
+        identityNumber: '2206037190',
+        phone: '0857-1122-3344',
+        organization: 'BEM FKG UI (Departemen Pengabdian)',
+        avatarUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
+      },
+      {
+        id: 'usr_fik_fajar',
+        name: 'Fajar Ramadhan',
+        email: 'fajar.ramadhan21@ui.ac.id',
+        role: 'faculty_user',
+        faculty: 'FIK',
+        identityNumber: '2106041122',
+        phone: '0819-0987-6543',
+        organization: 'Senat Mahasiswa FIK UI',
+        avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+      },
+      {
+        id: 'usr_fkm_siti',
+        name: 'Siti Nurhaliza',
+        email: 'siti.nurhaliza22@ui.ac.id',
+        role: 'faculty_user',
+        faculty: 'FKM',
+        identityNumber: '2206059918',
+        phone: '0813-4455-6677',
+        organization: 'Klinik Peduli Sehat BEM FKM UI',
+        avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
+      },
+    ];
+
+    const SEED_FACILITIES = [
+      {
+        id: 'fac_auditorium_rik',
+        code: 'AUD-RIK-401',
+        name: 'Auditorium Utama RIK UI',
+        building: 'Gedung A RIK',
+        floor: 4,
+        capacity: 350,
+        roomType: 'auditorium',
+        description: 'Auditorium megah berstandar internasional dengan tata akustik modern, dual projector laser 4K, dan panggung pertunjukan. Cocok untuk simposium nasional 5 fakultas.',
+        amenities: ['Sound System Terintegrasi 12 Channel', 'Dual Projector 4K Laser & Motorized Screen', 'AC Sentral Dingin', 'Panggung & Podium Kayu Jati', 'Ruang Transit VIP Tamu'],
+        images: ['https://images.unsplash.com/photo-1517457373958-b7bdd4587205?w=800&auto=format&fit=crop&q=80'],
+        rules: ['Dilarang membawa makanan berat ke dalam area karpet.', 'Pengajuan proposal maksimal H-7 acara.'],
+        isActive: true,
+      },
+      {
+        id: 'fac_amphitheater_101',
+        code: 'AMP-RIK-101',
+        name: 'Amphitheater RIK 101',
+        building: 'Gedung B RIK',
+        floor: 1,
+        capacity: 120,
+        roomType: 'amphitheater',
+        description: 'Ruang kuliah berundak setengah lingkaran yang interaktif dengan stopkontak di setiap baris meja.',
+        amenities: ['Proyektor HD Motorized', 'Mic Meja Diskusi & Wireless Handheld', 'Smart Whiteboard Interaktif'],
+        images: ['https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=800&auto=format&fit=crop&q=80'],
+        rules: ['Kembalikan posisi meja dan kursi sesuai layout awal.'],
+        isActive: true,
+      },
+      {
+        id: 'fac_interpro_202',
+        code: 'DIS-RIK-202',
+        name: 'Ruang Diskusi Interprofesional (IPE) 202',
+        building: 'Gedung A RIK',
+        floor: 2,
+        capacity: 40,
+        roomType: 'discussion_room',
+        description: 'Ruang modular serbaguna khusus untuk pembelajaran kolaboratif IPE mahasiswa 5 fakultas RIK UI.',
+        amenities: ['Meja Kursi Modular Beroda', '4 Monitor Presentasi Dinding untuk Kerja Kelompok', 'Glass Whiteboard 3 Sisi'],
+        images: ['https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&auto=format&fit=crop&q=80'],
+        rules: ['Kapasitas maksimal 40 orang.'],
+        isActive: true,
+      },
+      {
+        id: 'fac_cbt_lab',
+        code: 'LAB-CBT-305',
+        name: 'Laboratorium Komputer & CBT RIK',
+        building: 'Gedung C RIK',
+        floor: 3,
+        capacity: 80,
+        roomType: 'cbt_lab',
+        description: 'Lab komputer terpusat standar Ujian Kompetensi Nasional (UKMPPD, UKAI, UKOM) dengan LAN Gigabit terisolasi dan backup genset.',
+        amenities: ['80 PC Workstation Intel Core i7', 'Jaringan Ujian Terisolasi Standar Nasional', 'CCTV 360 Pengawas Ujian'],
+        images: ['https://images.unsplash.com/photo-1562774053-701939374585?w=800&auto=format&fit=crop&q=80'],
+        rules: ['Wajib lepas alas kaki di pintu masuk.', 'Dilarang membawa makanan/minuman ke meja komputer.'],
+        isActive: true,
+      },
+      {
+        id: 'fac_plaza_terbuka',
+        code: 'PLZ-HUB-001',
+        name: 'Plaza Selasar Terbuka RIK UI',
+        building: 'Gedung Utama RIK',
+        floor: 1,
+        capacity: 250,
+        roomType: 'open_space',
+        description: 'Area selasar semi-outdoor beratap kanopi modern untuk pameran poster ilmiah, donor darah, dan bazaar inovasi farmasi.',
+        amenities: ['Kanopi Pelindung Hujan & Angin Sejuk', 'Titik Listrik Daya Tinggi untuk Booth Pameran', 'Dekat Kantin & Taman RIK'],
+        images: ['https://images.unsplash.com/photo-1511578314322-379afb476865?w=800&auto=format&fit=crop&q=80'],
+        rules: ['Menjaga kebersihan dan membuang sampah pada tempat pilah.'],
+        isActive: true,
+      },
+    ];
+
+    const SEED_EQUIPMENT = [
+      { id: 'eq_projector_laser', name: 'Proyektor Portabel Laser 5000 Lumens', category: 'audio_visual', totalQuantity: 8, availableQuantity: 5, condition: 'Baik' },
+      { id: 'eq_wireless_mic', name: 'Set Mikrofon Wireless UHF Dual-Handheld', category: 'audio_visual', totalQuantity: 12, availableQuantity: 9, condition: 'Baik' },
+      { id: 'eq_sound_portable', name: 'Portable PA Speaker Sound System 400W & Trolley', category: 'audio_visual', totalQuantity: 4, availableQuantity: 2, condition: 'Baik' },
+      { id: 'eq_laser_clicker', name: 'Wireless Presenter Clicker dengan Green Laser', category: 'electronics', totalQuantity: 15, availableQuantity: 13, condition: 'Baik' },
+      { id: 'eq_kursi_futura', name: 'Paket Kursi Tambahan Futura (50 Unit/Paket)', category: 'furniture', totalQuantity: 8, availableQuantity: 5, condition: 'Baik' },
+    ];
+
+    const getOffsetDate = (days, hour, minute = 0) => {
+      const d = new Date();
+      d.setDate(d.getDate() + days);
+      d.setHours(hour, minute, 0, 0);
+      return d.toISOString();
+    };
+
+    const SEED_RESERVATIONS = [
+      {
+        id: 'res_001',
+        reservationCode: 'RIK-2026-0042',
+        userId: 'usr_fk_dimas',
+        userName: 'Dimas Pratama',
+        userFaculty: 'FK',
+        userPhone: '0813-8899-1122',
+        userNPM: '2206014521',
+        userOrganization: 'BEM Fakultas Kedokteran UI',
+        facilityId: 'fac_auditorium_rik',
+        facilityName: 'Auditorium Utama RIK UI',
+        facilityBuilding: 'Gedung A RIK (Lt. 4)',
+        startTime: getOffsetDate(2, 8, 30),
+        endTime: getOffsetDate(2, 16, 0),
+        title: 'Simposium Nasional Kedokteran Tropis & IPE Se-Rumpun Ilmu Kesehatan 2026',
+        description: 'Simposium ilmiah 5 fakultas RIK untuk mitigasi penyakit tropis endemis dengan pendekatan interprofesional.',
+        eventType: 'student_org',
+        expectedAttendees: 300,
+        equipment: [{ equipmentId: 'eq_wireless_mic', equipmentName: 'Set Mikrofon Wireless UHF', quantityRequested: 2 }],
+        documents: [{ id: 'doc_001', name: 'Proposal_Simposium_Kedokteran_Tropis_2026.pdf', sizeBytes: 2450000 }],
+        status: 'approved',
+        adminNotes: 'Disetujui. Tim audio TU Pusat akan bersiap 1 jam sebelum kegiatan.',
+        reviewedByName: 'Dr. Ratna Widjaja, M.Kes',
+        createdAt: getOffsetDate(-3, 10, 15),
+        history: [{ status: 'approved', timestamp: getOffsetDate(-2, 14, 20), changedByName: 'Dr. Ratna Widjaja, M.Kes', notes: 'Surat izin lengkap.' }],
+      },
+      {
+        id: 'res_002',
+        reservationCode: 'RIK-2026-0043',
+        userId: 'usr_ff_aulia',
+        userName: 'Aulia Zahra',
+        userFaculty: 'FF',
+        userPhone: '0812-7766-3344',
+        userNPM: '2306028910',
+        userOrganization: 'HMD Farmasi UI (Divisi Ilmiah)',
+        facilityId: 'fac_interpro_202',
+        facilityName: 'Ruang Diskusi Interprofesional (IPE) 202',
+        facilityBuilding: 'Gedung A RIK (Lt. 2)',
+        startTime: getOffsetDate(1, 13, 0),
+        endTime: getOffsetDate(1, 17, 0),
+        title: 'Lokakarya Kolaboratif: Kajian Interaksi Obat & Farmakoterapi Terpadu',
+        description: 'Studi kasus resep klinis bersama mahasiswa farmasi, kedokteran, dan keperawatan.',
+        eventType: 'academic',
+        expectedAttendees: 36,
+        equipment: [{ equipmentId: 'eq_laser_clicker', equipmentName: 'Wireless Presenter Clicker', quantityRequested: 1 }],
+        documents: [{ id: 'doc_002', name: 'Surat_Permohonan_Ruang_IPE_Farmasi.pdf', sizeBytes: 1120000 }],
+        status: 'pending',
+        createdAt: getOffsetDate(-1, 9, 30),
+        history: [{ status: 'pending', timestamp: getOffsetDate(-1, 9, 30), changedByName: 'Aulia Zahra', notes: 'Menunggu review TU.' }],
+      },
+      {
+        id: 'res_003',
+        reservationCode: 'RIK-2026-0044',
+        userId: 'usr_fkg_nabila',
+        userName: 'Nabila Putri Santoso',
+        userFaculty: 'FKG',
+        userPhone: '0857-1122-3344',
+        userNPM: '2206037190',
+        userOrganization: 'BEM FKG UI (Departemen Pengabdian)',
+        facilityId: 'fac_amphitheater_101',
+        facilityName: 'Amphitheater RIK 101',
+        facilityBuilding: 'Gedung B RIK (Lt. 1)',
+        startTime: getOffsetDate(4, 9, 0),
+        endTime: getOffsetDate(4, 13, 0),
+        title: 'Briefing Akbar Bakti Sosial Kesehatan Gigi Terpadu UI',
+        description: 'Pengarahan 100 relawan dokter gigi muda mengenai SOP tindakan profilaksis sekolah dasar.',
+        eventType: 'student_org',
+        expectedAttendees: 100,
+        equipment: [],
+        documents: [{ id: 'doc_003', name: 'TOR_Baksos_FKGUI_2026.pdf', sizeBytes: 3100000 }],
+        status: 'revision_requested',
+        adminNotes: 'Surat pengantar dekanat belum bertanda tangan Wakil Dekan Bidang Pendidikan, harap unggah ulang.',
+        reviewedByName: 'Dr. Ratna Widjaja, M.Kes',
+        createdAt: getOffsetDate(-2, 16, 45),
+        history: [
+          { status: 'pending', timestamp: getOffsetDate(-2, 16, 45), changedByName: 'Nabila Putri', notes: 'Diajukan.' },
+          { status: 'revision_requested', timestamp: getOffsetDate(-1, 11, 0), changedByName: 'Dr. Ratna Widjaja', notes: 'Minta revisi surat pengantar.' }
+        ],
+      },
+    ];
+
+    function App() {
+      const [personas, setPersonas] = useState(() => {
+        const saved = localStorage.getItem('rik_personas');
+        return saved ? JSON.parse(saved) : SEED_PERSONAS;
+      });
+
+      const [currentUser, setCurrentUser] = useState(() => {
+        const saved = localStorage.getItem('rik_active_user');
+        return saved ? JSON.parse(saved) : SEED_PERSONAS[0];
+      });
+
+      const [facilities, setFacilities] = useState(() => {
+        const saved = localStorage.getItem('rik_facilities');
+        return saved ? JSON.parse(saved) : SEED_FACILITIES;
+      });
+
+      const [reservations, setReservations] = useState(() => {
+        const saved = localStorage.getItem('rik_reservations');
+        return saved ? JSON.parse(saved) : SEED_RESERVATIONS;
+      });
+
+      const [equipment, setEquipment] = useState(() => {
+        const saved = localStorage.getItem('rik_equipment');
+        return saved ? JSON.parse(saved) : SEED_EQUIPMENT;
+      });
+
+      const [activeTab, setActiveTab] = useState(currentUser.role === 'tu_admin' ? 'admin_dashboard' : 'faculty_dashboard');
+      const [selectedFacilityForDetail, setSelectedFacilityForDetail] = useState(null);
+      const [showPersonaMenu, setShowPersonaMenu] = useState(false);
+      const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
+      const [activeModalReq, setActiveModalReq] = useState(null);
+      const [activeReceiptReq, setActiveReceiptReq] = useState(null);
+      const [activeRevisionReq, setActiveRevisionReq] = useState(null);
+      const [showProfileModal, setShowProfileModal] = useState(false);
+      const [showAuthModal, setShowAuthModal] = useState(null); // 'login' | 'register' | null
+      const [adminNoteInput, setAdminNoteInput] = useState('');
+      const [toastMsg, setToastMsg] = useState(null);
+
+      useEffect(() => {
+        localStorage.setItem('rik_personas', JSON.stringify(personas));
+      }, [personas]);
+
+      useEffect(() => {
+        localStorage.setItem('rik_active_user', JSON.stringify(currentUser));
+      }, [currentUser]);
+
+      useEffect(() => {
+        localStorage.setItem('rik_facilities', JSON.stringify(facilities));
+      }, [facilities]);
+
+      useEffect(() => {
+        localStorage.setItem('rik_reservations', JSON.stringify(reservations));
+      }, [reservations]);
+
+      useEffect(() => {
+        localStorage.setItem('rik_equipment', JSON.stringify(equipment));
+      }, [equipment]);
+
+      const isTUAdmin = currentUser.role === 'tu_admin';
+      const facultyMeta = FACULTIES_DATA[currentUser.faculty] || FACULTIES_DATA.PUSAT_RIK;
+
+      const triggerToast = (msg) => {
+        setToastMsg(msg);
+        setTimeout(() => setToastMsg(null), 3500);
+      };
+
+      const handleSwitchUser = (user) => {
+        setCurrentUser(user);
+        setShowPersonaMenu(false);
+        setActiveTab(user.role === 'tu_admin' ? 'admin_dashboard' : 'faculty_dashboard');
+        triggerToast(`Beralih akun: ${user.name} (${user.organization})`);
+      };
+
+      const resetDemoData = () => {
+        localStorage.clear();
+        setFacilities(SEED_FACILITIES);
+        setReservations(SEED_RESERVATIONS);
+        setEquipment(SEED_EQUIPMENT);
+        setCurrentUser(SEED_PERSONAS[0]);
+        setActiveTab('admin_dashboard');
+        triggerToast('Semua data simulasi berhasil direset ke kondisi awal!');
+      };
+
+      const handleDecision = (reservationId, newStatus) => {
+        const target = reservations.find((r) => r.id === reservationId);
+        if (!target) return;
+
+        // If approving, prevent overlapping room bookings and equipment overbooking
+        if (newStatus === 'approved') {
+          const start = new Date(target.startTime).getTime();
+          const end = new Date(target.endTime).getTime();
+
+          // 1. Room conflict check
+          const roomConflict = reservations.find((r) =>
+            r.id !== target.id &&
+            r.facilityId === target.facilityId &&
+            r.status === 'approved' &&
+            start < new Date(r.endTime).getTime() &&
+            end > new Date(r.startTime).getTime()
+          );
+
+          if (roomConflict) {
+            alert(`⚠️ GAGAL MENYETUJUI (DOUBLE-BOOKING): Terdapat jadwal bentrok dengan acara "${roomConflict.title}" (${new Date(roomConflict.startTime).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} - ${new Date(roomConflict.endTime).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} WIB).`);
+            return;
+          }
+
+          // 2. Equipment overbooking check
+          if (target.equipment && target.equipment.length > 0) {
+            const overlappingApproved = reservations.filter((r) =>
+              r.id !== target.id &&
+              r.status === 'approved' &&
+              start < new Date(r.endTime).getTime() &&
+              end > new Date(r.startTime).getTime()
+            );
+
+            for (const eqReq of target.equipment) {
+              const eqItem = equipment.find((e) => e.id === eqReq.equipmentId);
+              if (!eqItem) continue;
+
+              let committed = 0;
+              for (const res of overlappingApproved) {
+                const match = res.equipment?.find((e) => e.equipmentId === eqReq.equipmentId);
+                if (match) committed += (match.quantityApproved ?? match.quantityRequested);
+              }
+
+              const availableForWindow = Math.max(0, eqItem.totalQuantity - committed);
+              const requested = eqReq.quantityApproved ?? eqReq.quantityRequested;
+
+              if (requested > availableForWindow) {
+                alert(`⚠️ GAGAL MENYETUJUI (OVERBOOKING SARPRAS): Kuota peralatan "${eqItem.name}" tidak mencukupi untuk rentang waktu ini. Tersedia: ${availableForWindow} unit, Diminta: ${requested} unit.`);
+                return;
+              }
+            }
+          }
+        }
+
+        const note = adminNoteInput.trim() || (
+          newStatus === 'approved' ? 'Disetujui oleh TU Pusat RIK.' :
+          newStatus === 'revision_requested' ? 'Perlu perbaikan berkas surat izin.' :
+          'Ditolak: Dokumen perizinan belum memenuhi kriteria.'
+        );
+
+        const updated = reservations.map((r) => {
+          if (r.id === reservationId) {
+            return {
+              ...r,
+              status: newStatus,
+              adminNotes: note,
+              reviewedByName: currentUser.name,
+              reviewedAt: new Date().toISOString(),
+              history: [
+                ...r.history,
+                {
+                  status: newStatus,
+                  timestamp: new Date().toISOString(),
+                  changedByName: currentUser.name,
+                  notes: note,
+                }
+              ]
+            };
+          }
+          return r;
+        });
+
+        setReservations(updated);
+        setActiveModalReq(null);
+        setAdminNoteInput('');
+        triggerToast(`Status permohonan berhasil diperbarui menjadi: ${newStatus.toUpperCase()}`);
+      };
+
+      const handleUpdateProfile = (profileData) => {
+        const updated = {
+          ...currentUser,
+          name: profileData.name,
+          phone: profileData.phone,
+          identityNumber: profileData.identityNumber,
+          organization: profileData.organization,
+        };
+        setCurrentUser(updated);
+        const updatedPersonas = personas.map((p) => p.id === currentUser.id ? updated : p);
+        setPersonas(updatedPersonas);
+        setShowProfileModal(false);
+        triggerToast('Profil pengguna berhasil diperbarui!');
+      };
+
+      const handleRegister = (regData) => {
+        const newId = `usr_${regData.faculty.toLowerCase()}_${Date.now()}`;
+        const newPersona = {
+          id: newId,
+          name: regData.name,
+          email: regData.email,
+          role: 'faculty_user',
+          faculty: regData.faculty,
+          identityNumber: regData.identityNumber,
+          phone: regData.phone,
+          organization: regData.organization,
+          avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+        };
+        const updated = [...personas, newPersona];
+        setPersonas(updated);
+        setCurrentUser(newPersona);
+        setShowAuthModal(null);
+        setActiveTab('faculty_dashboard');
+        triggerToast(`Registrasi akun berhasil! Selamat datang, ${newPersona.name}.`);
+      };
+
+      const handleLogin = (email) => {
+        const found = personas.find((p) => p.email.toLowerCase() === email.toLowerCase());
+        if (found) {
+          setCurrentUser(found);
+          setShowAuthModal(null);
+          setActiveTab(found.role === 'tu_admin' ? 'admin_dashboard' : 'faculty_dashboard');
+          triggerToast(`Berhasil masuk sebagai ${found.name}`);
+        } else {
+          alert('Email tidak terdaftar! Silakan gunakan email demo atau daftarkan akun baru.');
+        }
+      };
+
+      const handleResubmitRevision = (reservationId, revisedDocName, revisionNote) => {
+        const nowIso = new Date().toISOString();
+        const updated = reservations.map((r) => {
+          if (r.id === reservationId) {
+            const newDoc = {
+              id: `doc_rev_${Date.now()}`,
+              name: revisedDocName,
+              sizeBytes: 1540000,
+            };
+            return {
+              ...r,
+              status: 'pending',
+              documents: [...(r.documents || []), newDoc],
+              history: [
+                ...r.history,
+                {
+                  status: 'pending',
+                  timestamp: nowIso,
+                  changedByName: currentUser.name,
+                  notes: revisionNote || 'Berkas revisi telah diunggah dan diajukan ulang ke TU Pusat.',
+                }
+              ]
+            };
+          }
+          return r;
+        });
+        setReservations(updated);
+        setActiveRevisionReq(null);
+        triggerToast('Berkas revisi berhasil diajukan ulang! Status kembali ke "Menunggu TU".');
+      };
+
+      const handleCreateReservation = (formData) => {
+        const year = new Date().getFullYear();
+        const code = `RIK-${year}-${String(reservations.length + 1).padStart(4, '0')}`;
+        const newObj = {
+          ...formData,
+          id: `res_${Date.now()}`,
+          reservationCode: code,
+          userId: currentUser.id,
+          userName: currentUser.name,
+          userFaculty: currentUser.faculty,
+          userPhone: currentUser.phone,
+          userNPM: currentUser.identityNumber,
+          userOrganization: currentUser.organization,
+          status: 'pending',
+          createdAt: new Date().toISOString(),
+          history: [
+            {
+              status: 'pending',
+              timestamp: new Date().toISOString(),
+              changedByName: currentUser.name,
+              notes: 'Permohonan diajukan secara online.',
+            }
+          ]
+        };
+
+        setReservations([newObj, ...reservations]);
+        setActiveTab('my_reservations');
+        triggerToast(`Sukses! Permohonan ${code} berhasil dikirim ke TU Pusat.`);
+      };
+
+      const sanitizedReservations = useMemo(() => {
+        if (isTUAdmin) return reservations;
+        return reservations.map((r) => {
+          if (r.userId === currentUser.id) return r;
+          return {
+            ...r,
+            userName: `Mahasiswa / Staf ${r.userFaculty}`,
+            userPhone: '***-****-****',
+            userNPM: '**********',
+            description: '(Deskripsi internal)',
+            documents: [],
+          };
+        });
+      }, [reservations, currentUser, isTUAdmin]);
+
+      const pendingCount = reservations.filter((r) => r.status === 'pending' || r.status === 'revision_requested').length;
+      const myReservations = reservations.filter((r) => r.userId === currentUser.id);
+
+      return (
+        <div className="flex h-screen overflow-hidden">
+          {mobileSidebarOpen && (
+            <div
+              className="fixed inset-0 z-40 bg-stone-900/60 md:hidden"
+              onClick={() => setMobileSidebarOpen(false)}
+            />
+          )}
+
+          {/* SIDEBAR NAVIGATION */}
+          <aside className={`fixed md:static inset-y-0 left-0 z-50 w-64 bg-[#132A13] text-stone-100 flex flex-col border-r border-[#1B4332] shrink-0 transition-transform duration-200 ${
+            mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+          }`}>
+            <div className="p-5 border-b border-[#1B4332] flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#52B788] to-[#2D6A4F] flex items-center justify-center font-black text-white text-base shadow-md">
+                  +
+                </div>
+                <div>
+                  <h1 className="text-base font-extrabold tracking-tight text-white">RIK SpaceHub</h1>
+                  <p className="text-[10px] uppercase font-bold tracking-wider text-[#95D5B2]">Universitas Indonesia</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-3 mx-3 my-3 rounded-xl bg-[#1B4332]/70 border border-[#2D6A4F]/60">
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-[#52B788] animate-pulse"></span>
+                <span className="text-[11px] font-bold text-[#D8F3DC]">
+                  {isTUAdmin ? 'Portal Admin TU Pusat' : `Delegasi ${facultyMeta.code}`}
+                </span>
+              </div>
+              <p className="text-xs font-semibold text-white mt-1 truncate">{currentUser.name}</p>
+              <p className="text-[10px] text-stone-300 truncate">{currentUser.organization}</p>
+            </div>
+
+            <nav className="flex-1 px-3 py-2 space-y-1 overflow-y-auto">
+              <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-[#74C69D]">
+                {isTUAdmin ? 'Menu Administrasi TU' : 'Menu Layanan Ruangan'}
+              </div>
+
+              {isTUAdmin ? (
+                <>
+                  <button
+                    onClick={() => { setActiveTab('admin_dashboard'); setMobileSidebarOpen(false); }}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left ${
+                      activeTab === 'admin_dashboard' ? 'bg-[#2D6A4F] text-white shadow-xs' : 'text-stone-300 hover:bg-[#1B4332]'
+                    }`}
+                  >
+                    📊 Admin Dashboard
+                  </button>
+                  <button
+                    onClick={() => { setActiveTab('admin_inbox'); setMobileSidebarOpen(false); }}
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left ${
+                      activeTab === 'admin_inbox' ? 'bg-[#2D6A4F] text-white shadow-xs' : 'text-stone-300 hover:bg-[#1B4332]'
+                    }`}
+                  >
+                    <span>📥 Reservation Management</span>
+                    {pendingCount > 0 && (
+                      <span className="px-1.5 py-0.5 rounded-full bg-amber-500 text-stone-900 font-extrabold text-[10px]">
+                        {pendingCount}
+                      </span>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => { setActiveTab('admin_facilities'); setMobileSidebarOpen(false); }}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left ${
+                      activeTab === 'admin_facilities' ? 'bg-[#2D6A4F] text-white shadow-xs' : 'text-stone-300 hover:bg-[#1B4332]'
+                    }`}
+                  >
+                    🏢 Room Management
+                  </button>
+                  <button
+                    onClick={() => { setActiveTab('admin_equipment'); setMobileSidebarOpen(false); }}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left ${
+                      activeTab === 'admin_equipment' ? 'bg-[#2D6A4F] text-white shadow-xs' : 'text-stone-300 hover:bg-[#1B4332]'
+                    }`}
+                  >
+                    📦 Equipment Inventory
+                  </button>
+                  <button
+                    onClick={() => { setActiveTab('admin_reports'); setMobileSidebarOpen(false); }}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left ${
+                      activeTab === 'admin_reports' ? 'bg-[#2D6A4F] text-white shadow-xs' : 'text-stone-300 hover:bg-[#1B4332]'
+                    }`}
+                  >
+                    📈 Reports & Analytics
+                  </button>
+                  <button
+                    onClick={() => { setActiveTab('shared_calendar'); setMobileSidebarOpen(false); }}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left ${
+                      activeTab === 'shared_calendar' ? 'bg-[#2D6A4F] text-white shadow-xs' : 'text-stone-300 hover:bg-[#1B4332]'
+                    }`}
+                  >
+                    📅 Room Calendar (Master)
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => { setActiveTab('faculty_dashboard'); setMobileSidebarOpen(false); }}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left ${
+                      activeTab === 'faculty_dashboard' ? 'bg-[#2D6A4F] text-white shadow-xs' : 'text-stone-300 hover:bg-[#1B4332]'
+                    }`}
+                  >
+                    📊 Dashboard
+                  </button>
+                  <button
+                    onClick={() => { setActiveTab('facilities_catalog'); setMobileSidebarOpen(false); }}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left ${
+                      activeTab === 'facilities_catalog' || activeTab === 'facility_detail' ? 'bg-[#2D6A4F] text-white shadow-xs' : 'text-stone-300 hover:bg-[#1B4332]'
+                    }`}
+                  >
+                    🏛️ Explore Facilities
+                  </button>
+                  <button
+                    onClick={() => { setActiveTab('new_reservation'); setMobileSidebarOpen(false); }}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left ${
+                      activeTab === 'new_reservation' ? 'bg-[#2D6A4F] text-white shadow-xs' : 'text-stone-300 hover:bg-[#1B4332]'
+                    }`}
+                  >
+                    ➕ Reservation Form
+                  </button>
+                  <button
+                    onClick={() => { setActiveTab('my_reservations'); setMobileSidebarOpen(false); }}
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left ${
+                      activeTab === 'my_reservations' ? 'bg-[#2D6A4F] text-white shadow-xs' : 'text-stone-300 hover:bg-[#1B4332]'
+                    }`}
+                  >
+                    <span>📋 My Requests</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#1B4332] text-stone-300 font-bold">
+                      {myReservations.filter((r) => r.status === 'pending' || r.status === 'approved' || r.status === 'revision_requested').length}
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => { setActiveTab('booking_history'); setMobileSidebarOpen(false); }}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left ${
+                      activeTab === 'booking_history' ? 'bg-[#2D6A4F] text-white shadow-xs' : 'text-stone-300 hover:bg-[#1B4332]'
+                    }`}
+                  >
+                    📜 Booking History
+                  </button>
+                  <button
+                    onClick={() => { setActiveTab('shared_calendar'); setMobileSidebarOpen(false); }}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left ${
+                      activeTab === 'shared_calendar' ? 'bg-[#2D6A4F] text-white shadow-xs' : 'text-stone-300 hover:bg-[#1B4332]'
+                    }`}
+                  >
+                    📅 Room Calendar
+                  </button>
+                </>
+              )}
+            </nav>
+
+            <div className="p-4 border-t border-[#1B4332] bg-[#0E1F0E]/60 text-stone-400">
+              <p className="text-[10px] font-bold text-[#74C69D] uppercase tracking-wider mb-2">5 Fakultas Terpadu:</p>
+              <div className="flex flex-wrap gap-1">
+                {['FK', 'FKG', 'FKM', 'FF', 'FIK'].map((f) => (
+                  <span key={f} className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#1B4332] text-emerald-200">
+                    {f}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </aside>
+
+          {/* MAIN VIEW AREA */}
+          <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+            {/* DEMO MODE EXPLICIT BANNER */}
+            <div className="bg-amber-100 border-b border-amber-300 px-6 py-1.5 flex items-center justify-between text-[11px] text-amber-950">
+              <span className="flex items-center gap-1.5 font-bold">
+                <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                DEMO MODE (Simulasi Lokal Browser): Data disimpan di localStorage perangkat Anda.
+              </span>
+              <span className="hidden md:inline font-mono text-[10px] text-amber-800">
+                Hubungkan VITE_SUPABASE_URL di .env untuk database PostgreSQL multi-user
+              </span>
+            </div>
+
+            {/* TOPBAR */}
+            <header className="bg-white border-b border-stone-200 px-6 py-3 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setMobileSidebarOpen(true)}
+                  className="md:hidden p-1.5 rounded-lg border border-stone-200 text-stone-600 hover:bg-stone-100"
+                >
+                  ☰
+                </button>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-emerald-800">RIK SpaceHub</span>
+                  <span className="text-stone-300">/</span>
+                  <span className="text-xs text-stone-600 font-medium">
+                    {isTUAdmin ? 'Tata Usaha Pusat RIK UI' : `Fakultas: ${facultyMeta.name}`}
+                  </span>
+                </div>
+              </div>
+
+              {/* Right Header Action Buttons */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowProfileModal(true)}
+                  className="px-3 py-1.5 rounded-xl border border-stone-200 hover:bg-stone-50 text-xs font-bold text-stone-700 flex items-center gap-1.5 transition-colors shadow-xs"
+                >
+                  <span>👤 Profil Saya</span>
+                </button>
+
+                <button
+                  onClick={() => setShowAuthModal('register')}
+                  className="px-3 py-1.5 rounded-xl border border-stone-200 hover:bg-stone-50 text-xs font-bold text-stone-700 flex items-center gap-1.5 transition-colors shadow-xs"
+                >
+                  <span>➕ Daftar / Masuk</span>
+                </button>
+
+                {/* Persona Selector Dropdown */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowPersonaMenu(!showPersonaMenu)}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-emerald-700/30 bg-emerald-50 hover:bg-emerald-100 text-xs font-bold text-emerald-950 transition-colors shadow-xs"
+                  >
+                    <span>✨ Akun Demo:</span>
+                    <span className="underline decoration-emerald-600 underline-offset-2">{currentUser.name}</span>
+                    <span className="text-[10px]">▼</span>
+                  </button>
+
+                  {showPersonaMenu && (
+                    <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-stone-200 py-2 z-50">
+                      <div className="px-3 py-1.5 border-b border-stone-100 text-[10px] font-bold uppercase text-stone-400">
+                        Pilih Akun Penguji:
+                      </div>
+                      {personas.map((p) => (
+                        <button
+                          key={p.id}
+                          onClick={() => handleSwitchUser(p)}
+                          className={`w-full text-left px-3 py-2 flex items-center justify-between text-xs hover:bg-stone-50 transition-colors ${
+                            p.id === currentUser.id ? 'bg-emerald-50/80 font-bold text-emerald-950' : 'text-stone-700'
+                          }`}
+                        >
+                          <div>
+                            <div className="font-bold">{p.name}</div>
+                            <div className="text-[10px] text-stone-500">{p.organization}</div>
+                          </div>
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-stone-100 text-stone-600">
+                            {p.faculty}
+                          </span>
+                        </button>
+                      ))}
+                      <div className="border-t border-stone-100 mt-1 pt-1 px-3">
+                        <button
+                          onClick={resetDemoData}
+                          className="w-full text-left py-1 text-[11px] font-bold text-rose-600 hover:text-rose-800"
+                        >
+                          🔄 Reset Data Demo ke Semula
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </header>
+
+            {toastMsg && (
+              <div className="bg-[#1B4332] text-white text-xs font-bold px-4 py-2 text-center shadow-lg transition-all animate-bounce">
+                {toastMsg}
+              </div>
+            )}
+
+            {/* TAB CONTENTS (ALL 12 PAGES) */}
+            <main className="flex-1 overflow-y-auto p-6 lg:p-8">
+              <div className="max-w-6xl mx-auto space-y-6">
+
+                {/* 1. DASHBOARD */}
+                {activeTab === 'faculty_dashboard' && (
+                  <div className="space-y-6">
+                    <div className="bg-gradient-to-r from-[#1B4332] via-[#2D6A4F] to-[#132A13] rounded-3xl p-6 sm:p-8 text-white shadow-xl">
+                      <span className="px-3 py-1 rounded-full bg-emerald-400/20 text-emerald-200 text-xs font-bold border border-emerald-400/30">
+                        {facultyMeta.name} • Portal Bersama RIK UI
+                      </span>
+                      <h2 className="text-2xl sm:text-3xl font-black mt-3">Selamat Datang, {currentUser.name}</h2>
+                      <p className="text-xs sm:text-sm text-stone-200 mt-2 max-w-2xl leading-relaxed">
+                        Cek ketersediaan auditorium, amphitheater, ruang diskusi interprofesional, dan ajukan peminjaman sarana bersama secara transparan tanpa bentrok jadwal.
+                      </p>
+                      <div className="flex flex-wrap gap-3 mt-5">
+                        <button
+                          onClick={() => setActiveTab('new_reservation')}
+                          className="px-4 py-2 rounded-xl bg-[#52B788] hover:bg-[#74C69D] text-[#0E1F0E] font-extrabold text-xs shadow-md"
+                        >
+                          + Ajukan Peminjaman Sekarang
+                        </button>
+                        <button
+                          onClick={() => setActiveTab('facilities_catalog')}
+                          className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/20"
+                        >
+                          Lihat Katalog Ruangan
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-xs">
+                        <span className="text-[11px] font-bold uppercase text-stone-400">Permohonan Menunggu TU</span>
+                        <div className="text-2xl font-black text-amber-700 mt-1">
+                          {myReservations.filter((r) => r.status === 'pending').length}
+                        </div>
+                        <p className="text-[11px] text-stone-500 mt-1">Dalam proses telaah berkas</p>
+                      </div>
+
+                      <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-xs">
+                        <span className="text-[11px] font-bold uppercase text-stone-400">Peminjaman Disetujui</span>
+                        <div className="text-2xl font-black text-emerald-800 mt-1">
+                          {myReservations.filter((r) => r.status === 'approved').length}
+                        </div>
+                        <p className="text-[11px] text-stone-500 mt-1">Siap digunakan di jadwal acara</p>
+                      </div>
+
+                      <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-xs">
+                        <span className="text-[11px] font-bold uppercase text-stone-400">Jaminan Privasi Dokumen</span>
+                        <div className="text-xs font-bold text-emerald-900 mt-1">Aktif & Terproteksi</div>
+                        <p className="text-[11px] text-stone-500 mt-1">Dokumen hanya dapat dilihat TU & Anda</p>
+                      </div>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-sm font-bold text-stone-900">Permohonan Aktif Anda</h3>
+                        <button
+                          onClick={() => setActiveTab('my_reservations')}
+                          className="text-xs font-bold text-emerald-800 hover:underline"
+                        >
+                          Lihat Semua →
+                        </button>
+                      </div>
+
+                      {myReservations.length === 0 ? (
+                        <p className="text-xs text-stone-400 italic py-6 text-center">Belum ada permohonan yang diajukan.</p>
+                      ) : (
+                        <div className="divide-y divide-stone-100">
+                          {myReservations.slice(0, 3).map((r) => (
+                            <div key={r.id} className="py-3 flex items-center justify-between text-xs">
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-mono font-bold text-stone-500 text-[10px]">{r.reservationCode}</span>
+                                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                    r.status === 'approved' ? 'bg-emerald-100 text-emerald-800' :
+                                    r.status === 'revision_requested' ? 'bg-orange-100 text-orange-800' : 'bg-amber-100 text-amber-800'
+                                  }`}>
+                                    {r.status === 'approved' ? 'Disetujui' : r.status === 'revision_requested' ? 'Perlu Revisi Dokumen' : 'Menunggu TU'}
+                                  </span>
+                                </div>
+                                <h4 className="font-bold text-stone-900 mt-1">{r.title}</h4>
+                                <p className="text-stone-500 text-[11px]">{r.facilityName} • {new Date(r.startTime).toLocaleDateString('id-ID')}</p>
+                              </div>
+                              <button
+                                onClick={() => setActiveModalReq(r)}
+                                className="px-3 py-1.5 rounded-lg border border-stone-300 font-bold hover:bg-stone-50"
+                              >
+                                Detail
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* 2. ROOM CALENDAR */}
+                {activeTab === 'shared_calendar' && (
+                  <div className="space-y-6">
+                    <div>
+                      <span className="text-xs font-bold uppercase text-emerald-800">Jadwal Bersama</span>
+                      <h2 className="text-xl font-black text-stone-900">Room Calendar (Kalender Fasilitas RIK UI)</h2>
+                      <p className="text-xs text-stone-500 mt-0.5">
+                        Menampilkan jadwal acara 5 fakultas tanpa membocorkan nomor kontak pribadi dan berkas rahasia.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {sanitizedReservations.map((r) => (
+                        <div key={r.id} className="bg-white p-5 rounded-2xl border border-stone-200 shadow-xs space-y-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="px-2 py-0.5 rounded font-bold bg-stone-100 text-stone-700">
+                              {r.userFaculty} • {FACULTIES_DATA[r.userFaculty]?.shortName}
+                            </span>
+                            <span className="font-mono text-stone-400 font-bold">{r.reservationCode}</span>
+                          </div>
+                          <h4 className="font-bold text-stone-900 text-sm">{r.title}</h4>
+                          <div className="text-xs text-emerald-900 font-semibold">
+                            🏛️ {r.facilityName}
+                          </div>
+                          <div className="text-xs text-stone-600">
+                            📅 {new Date(r.startTime).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short' })}, {new Date(r.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(r.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} WIB
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. EXPLORE FACILITIES */}
+                {activeTab === 'facilities_catalog' && (
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-xs font-bold uppercase text-emerald-800">Sarana & Prasarana</span>
+                        <h2 className="text-xl font-black text-stone-900">Explore Facilities (Katalog Ruangan RIK)</h2>
+                      </div>
+                      <button
+                        onClick={() => setActiveTab('new_reservation')}
+                        className="px-4 py-2 rounded-xl bg-[#1B4332] text-white font-bold text-xs"
+                      >
+                        + Ajukan Reservasi
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                      {facilities.map((f) => (
+                        <div key={f.id} className="bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-xs flex flex-col justify-between">
+                          <div>
+                            <img src={f.images[0]} alt={f.name} className="w-full h-44 object-cover" />
+                            <div className="p-5">
+                              <div className="flex items-center justify-between text-xs mb-1">
+                                <span className="font-mono font-bold text-stone-500">{f.code}</span>
+                                <span className="font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                                  Max {f.capacity} Orang
+                                </span>
+                              </div>
+                              <h3 className="font-bold text-stone-900 text-sm mt-1">{f.name}</h3>
+                              <p className="text-xs text-stone-500 mt-1">{f.building} (Lt. {f.floor})</p>
+                              <p className="text-xs text-stone-600 mt-2 line-clamp-2">{f.description}</p>
+                            </div>
+                          </div>
+
+                          <div className="p-5 pt-0 flex gap-2">
+                            <button
+                              onClick={() => {
+                                setSelectedFacilityForDetail(f);
+                                setActiveTab('facility_detail');
+                              }}
+                              className="flex-1 py-2 rounded-xl border border-stone-300 font-bold text-xs hover:bg-stone-50"
+                            >
+                              Detail & Specs
+                            </button>
+                            <button
+                              onClick={() => {
+                                setActiveTab('new_reservation');
+                              }}
+                              className="flex-1 py-2 rounded-xl bg-[#1B4332] hover:bg-[#132A13] text-white font-bold text-xs"
+                            >
+                              Pesan Ruang
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 4. ROOM DETAILS PAGE */}
+                {activeTab === 'facility_detail' && selectedFacilityForDetail && (
+                  <div className="space-y-6">
+                    <button
+                      onClick={() => setActiveTab('facilities_catalog')}
+                      className="text-xs font-bold text-stone-500 hover:text-emerald-900 flex items-center gap-1"
+                    >
+                      ← Kembali ke Explore Facilities
+                    </button>
+
+                    <div className="bg-white rounded-3xl border border-stone-200 overflow-hidden shadow-xs">
+                      <img
+                        src={selectedFacilityForDetail.images[0]}
+                        alt={selectedFacilityForDetail.name}
+                        className="w-full h-64 object-cover"
+                      />
+                      <div className="p-6 sm:p-8 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <span className="font-mono text-xs font-bold text-stone-400">{selectedFacilityForDetail.code}</span>
+                          <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-900 font-bold text-xs">
+                            Kapasitas: {selectedFacilityForDetail.capacity} Orang
+                          </span>
+                        </div>
+                        <h2 className="text-2xl font-black text-stone-900">{selectedFacilityForDetail.name}</h2>
+                        <p className="text-xs text-stone-500">{selectedFacilityForDetail.building} • Lantai {selectedFacilityForDetail.floor}</p>
+                        <p className="text-xs text-stone-700 leading-relaxed">{selectedFacilityForDetail.description}</p>
+
+                        <div className="pt-4 border-t">
+                          <h4 className="text-xs font-bold uppercase text-stone-400 mb-2">Fasilitas Standar Terpasang:</h4>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {selectedFacilityForDetail.amenities.map((a, idx) => (
+                              <div key={idx} className="p-2.5 rounded-xl bg-stone-50 text-xs font-semibold text-stone-700 border">
+                                ✓ {a}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="pt-4 border-t flex justify-end gap-3">
+                          <button
+                            onClick={() => setActiveTab('facilities_catalog')}
+                            className="px-4 py-2 rounded-xl border text-xs font-bold hover:bg-stone-50"
+                          >
+                            Tutup
+                          </button>
+                          <button
+                            onClick={() => setActiveTab('new_reservation')}
+                            className="px-5 py-2.5 rounded-xl bg-[#1B4332] text-white font-bold text-xs hover:bg-[#132A13]"
+                          >
+                            Pesan Ruangan Ini Sekarang
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 5. RESERVATION FORM */}
+                {activeTab === 'new_reservation' && (
+                  <NewReservationForm
+                    facilities={facilities}
+                    equipment={equipment}
+                    existingReservations={reservations}
+                    onSubmit={handleCreateReservation}
+                    onCancel={() => setActiveTab('faculty_dashboard')}
+                  />
+                )}
+
+                {/* 6. MY REQUESTS */}
+                {activeTab === 'my_reservations' && (
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-xs font-bold uppercase text-emerald-800">Tracking Berkas</span>
+                        <h2 className="text-xl font-black text-stone-900">My Requests (Permohonan Aktif)</h2>
+                      </div>
+                      <button
+                        onClick={() => setActiveTab('new_reservation')}
+                        className="px-3.5 py-1.5 rounded-xl bg-[#1B4332] text-white font-bold text-xs"
+                      >
+                        + Buat Permohonan Baru
+                      </button>
+                    </div>
+
+                    <div className="space-y-3">
+                      {myReservations.filter((r) => r.status === 'pending' || r.status === 'approved' || r.status === 'revision_requested').map((r) => (
+                        <div key={r.id} className={`bg-white p-5 rounded-2xl border shadow-xs flex items-center justify-between gap-4 ${
+                          r.status === 'revision_requested' ? 'border-orange-400 bg-orange-50/20' : 'border-stone-200'
+                        }`}>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-xs font-bold text-stone-500">{r.reservationCode}</span>
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                r.status === 'approved' ? 'bg-emerald-100 text-emerald-800' :
+                                r.status === 'revision_requested' ? 'bg-orange-100 text-orange-900 font-extrabold' : 'bg-amber-100 text-amber-800'
+                              }`}>
+                                {r.status === 'approved' ? 'Disetujui TU' : r.status === 'revision_requested' ? '⚠️ Perlu Revisi Dokumen' : 'Menunggu Review TU'}
+                              </span>
+                            </div>
+                            <h3 className="font-bold text-stone-900 text-sm mt-1">{r.title}</h3>
+                            <p className="text-xs text-stone-500 mt-0.5">
+                              {r.facilityName} • {new Date(r.startTime).toLocaleDateString('id-ID')}
+                            </p>
+                            {r.status === 'revision_requested' && r.adminNotes && (
+                              <p className="text-xs text-orange-950 font-semibold bg-orange-100/60 p-2 rounded-lg mt-2 border border-orange-200">
+                                Catatan TU: {r.adminNotes}
+                              </p>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => setActiveModalReq(r)}
+                            className="px-3.5 py-2 rounded-xl border border-stone-300 font-bold text-xs hover:bg-stone-50 shrink-0"
+                          >
+                            Lihat Detail
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 7. BOOKING HISTORY */}
+                {activeTab === 'booking_history' && (
+                  <div className="space-y-6">
+                    <div>
+                      <span className="text-xs font-bold uppercase text-emerald-800">Arsip & Bukti</span>
+                      <h2 className="text-xl font-black text-stone-900">Booking History (Riwayat Peminjaman)</h2>
+                    </div>
+
+                    <div className="space-y-3">
+                      {myReservations.map((item) => (
+                        <div key={item.id} className="bg-white p-5 rounded-2xl border border-stone-200 shadow-xs flex items-center justify-between gap-4">
+                          <div>
+                            <span className="font-mono text-xs font-bold text-stone-400">{item.reservationCode}</span>
+                            <h4 className="font-bold text-stone-900 text-sm">{item.title}</h4>
+                            <p className="text-xs text-stone-500">{item.facilityName} • {new Date(item.startTime).toLocaleDateString('id-ID')}</p>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => setActiveReceiptReq(item)}
+                              className="px-3 py-1.5 rounded-lg border font-bold text-xs hover:bg-stone-50"
+                            >
+                              📄 Bukti Pinjam
+                            </button>
+                            <button
+                              onClick={() => triggerToast('Fitur ulasan & feedback fasilitas tercatat untuk audit TU!')}
+                              className="px-3 py-1.5 rounded-lg border text-amber-800 border-amber-300 bg-amber-50 font-bold text-xs"
+                            >
+                              ★ Beri Ulasan
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 8. ADMIN DASHBOARD */}
+                {activeTab === 'admin_dashboard' && isTUAdmin && (
+                  <div className="space-y-6">
+                    <div className="bg-gradient-to-r from-[#132A13] via-[#1B4332] to-[#2D6A4F] rounded-3xl p-6 sm:p-8 text-white shadow-xl flex items-center justify-between">
+                      <div>
+                        <span className="px-3 py-1 rounded-full bg-emerald-400/20 text-emerald-200 text-xs font-bold border border-emerald-400/30">
+                          Meja Kerja Administrator Tata Usaha
+                        </span>
+                        <h2 className="text-2xl sm:text-3xl font-black mt-3">Admin Dashboard (Command Center TU)</h2>
+                        <p className="text-xs sm:text-sm text-stone-200 mt-1 max-w-xl">
+                          Tinjau permohonan ruangan, validasi surat izin dekanat 5 fakultas, dan koordinasikan peralatan sarpras.
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => setActiveTab('admin_inbox')}
+                        className="px-5 py-2.5 rounded-xl bg-[#52B788] hover:bg-[#74C69D] text-[#0E1F0E] font-extrabold text-xs shadow-md"
+                      >
+                        Buka Inbox Persetujuan ({pendingCount})
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                      <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-xs">
+                        <span className="text-[11px] font-bold uppercase text-amber-700">Menunggu Tindakan TU</span>
+                        <div className="text-3xl font-black text-amber-900 mt-1">{pendingCount}</div>
+                      </div>
+                      <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-xs">
+                        <span className="text-[11px] font-bold uppercase text-emerald-800">Total Disetujui</span>
+                        <div className="text-3xl font-black text-emerald-950 mt-1">
+                          {reservations.filter((r) => r.status === 'approved').length}
+                        </div>
+                      </div>
+                      <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-xs">
+                        <span className="text-[11px] font-bold uppercase text-stone-500">Ruangan Aktif</span>
+                        <div className="text-3xl font-black text-stone-900 mt-1">{facilities.length}</div>
+                      </div>
+                      <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-xs">
+                        <span className="text-[11px] font-bold uppercase text-stone-500">Total Alat Sarpras</span>
+                        <div className="text-3xl font-black text-stone-900 mt-1">
+                          {equipment.reduce((acc, e) => acc + e.totalQuantity, 0)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 9. RESERVATION MANAGEMENT (ADMIN INBOX) */}
+                {activeTab === 'admin_inbox' && isTUAdmin && (
+                  <div className="space-y-6">
+                    <div>
+                      <span className="text-xs font-bold uppercase text-emerald-800">Verifikasi Berkas</span>
+                      <h2 className="text-xl font-black text-stone-900">Reservation Management (Review Permohonan)</h2>
+                    </div>
+
+                    <div className="bg-white rounded-2xl border border-stone-200 shadow-xs overflow-hidden">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-stone-50 border-b border-stone-200 text-stone-500 uppercase font-bold text-[11px]">
+                          <tr>
+                            <th className="py-3 px-4">Tiket & Pemohon</th>
+                            <th className="py-3 px-4">Fakultas</th>
+                            <th className="py-3 px-4">Ruangan & Kegiatan</th>
+                            <th className="py-3 px-4">Waktu</th>
+                            <th className="py-3 px-4">Status</th>
+                            <th className="py-3 px-4 text-right">Keputusan</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-stone-100">
+                          {reservations.map((r) => (
+                            <tr key={r.id} className="hover:bg-stone-50/70">
+                              <td className="py-3 px-4">
+                                <span className="font-mono font-bold text-stone-700">{r.reservationCode}</span>
+                                <div className="font-bold text-stone-900">{r.userName}</div>
+                                <div className="text-[10px] text-stone-500">{r.userOrganization}</div>
+                              </td>
+                              <td className="py-3 px-4">
+                                <span className="px-2 py-0.5 rounded font-bold text-[10px] bg-stone-100 text-stone-800">
+                                  {r.userFaculty}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4">
+                                <div className="font-bold text-stone-900">{r.title}</div>
+                                <div className="text-stone-500 text-[11px]">{r.facilityName}</div>
+                              </td>
+                              <td className="py-3 px-4">
+                                <div>{new Date(r.startTime).toLocaleDateString('id-ID')}</div>
+                                <div className="text-[10px] text-stone-500">
+                                  {new Date(r.startTime).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})} - {new Date(r.endTime).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}
+                                </div>
+                              </td>
+                              <td className="py-3 px-4">
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                  r.status === 'approved' ? 'bg-emerald-100 text-emerald-800' :
+                                  r.status === 'revision_requested' ? 'bg-orange-100 text-orange-900' :
+                                  r.status === 'rejected' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
+                                }`}>
+                                  {r.status}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 text-right">
+                                <button
+                                  onClick={() => setActiveModalReq(r)}
+                                  className="px-3 py-1.5 rounded-lg bg-[#1B4332] hover:bg-[#132A13] text-white font-bold text-xs"
+                                >
+                                  Tinjau & Putuskan
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* 10. ROOM MANAGEMENT */}
+                {activeTab === 'admin_facilities' && isTUAdmin && (
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-xs font-bold uppercase text-emerald-800">Master Data</span>
+                        <h2 className="text-xl font-black text-stone-900">Room Management (Kelola Ruangan RIK)</h2>
+                      </div>
+                      <button
+                        onClick={() => triggerToast('Modal Tambah Ruangan Baru Siap!')}
+                        className="px-4 py-2 rounded-xl bg-[#1B4332] text-white font-bold text-xs"
+                      >
+                        + Tambah Ruangan Baru
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {facilities.map((fac) => (
+                        <div key={fac.id} className="bg-white p-5 rounded-2xl border border-stone-200 shadow-xs flex flex-col justify-between">
+                          <div>
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="font-mono font-bold text-stone-500">{fac.code}</span>
+                              <span className="px-2 py-0.5 rounded font-bold text-[10px] bg-emerald-100 text-emerald-900">
+                                {fac.isActive ? 'Aktif' : 'Maintenance'}
+                              </span>
+                            </div>
+                            <h3 className="font-bold text-stone-900 text-sm mt-1">{fac.name}</h3>
+                            <p className="text-xs text-stone-500">{fac.building} • Kapasitas: {fac.capacity} Orang</p>
+                          </div>
+                          <div className="pt-3 border-t mt-3 flex justify-end gap-2">
+                            <button
+                              onClick={() => triggerToast(`Mode perawatan diaktifkan untuk ${fac.name}`)}
+                              className="px-3 py-1 rounded-lg border text-xs font-bold hover:bg-stone-50"
+                            >
+                              Ubah Status
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 11. EQUIPMENT INVENTORY */}
+                {activeTab === 'admin_equipment' && isTUAdmin && (
+                  <div className="space-y-6">
+                    <div>
+                      <span className="text-xs font-bold uppercase text-emerald-800">Sarana & Logistik</span>
+                      <h2 className="text-xl font-black text-stone-900">Equipment Inventory (Inventaris Alat)</h2>
+                    </div>
+
+                    <div className="bg-white rounded-2xl border border-stone-200 shadow-xs overflow-hidden">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-stone-50 border-b border-stone-200 text-stone-500 uppercase font-bold text-[11px]">
+                          <tr>
+                            <th className="py-3 px-4">Nama Alat</th>
+                            <th className="py-3 px-4">Kategori</th>
+                            <th className="py-3 px-4">Total Stok</th>
+                            <th className="py-3 px-4">Stok Tersedia</th>
+                            <th className="py-3 px-4">Kondisi</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-stone-100">
+                          {equipment.map((eq) => (
+                            <tr key={eq.id}>
+                              <td className="py-3 px-4 font-bold text-stone-900">{eq.name}</td>
+                              <td className="py-3 px-4 uppercase text-[10px] font-bold text-stone-600">{eq.category}</td>
+                              <td className="py-3 px-4 font-bold text-stone-800">{eq.totalQuantity} Unit</td>
+                              <td className="py-3 px-4 font-bold text-emerald-800">{eq.availableQuantity} Unit Siap Pakai</td>
+                              <td className="py-3 px-4 text-emerald-700 font-semibold">✓ {eq.condition}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* 12. REPORTS & ANALYTICS */}
+                {activeTab === 'admin_reports' && isTUAdmin && (
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-xs font-bold uppercase text-emerald-800">Data & Analisis</span>
+                        <h2 className="text-xl font-black text-stone-900">Reports & Analytics (Laporan Utilisasi RIK)</h2>
+                      </div>
+                      <button
+                        onClick={() => {
+                          const csv = "data:text/csv;charset=utf-8,Kode,Kegiatan,Fakultas,Status\\n" + reservations.map(r => `${r.reservationCode},"${r.title}",${r.userFaculty},${r.status}`).join("\\n");
+                          const encoded = encodeURI(csv);
+                          const link = document.createElement("a");
+                          link.setAttribute("href", encoded);
+                          link.setAttribute("download", "Laporan_Utilisasi_RIK_UI.csv");
+                          document.body.appendChild(link);
+                          link.click();
+                          triggerToast('Laporan CSV berhasil diunduh!');
+                        }}
+                        className="px-4 py-2 rounded-xl bg-[#1B4332] text-white font-bold text-xs"
+                      >
+                        📊 Unduh Laporan CSV
+                      </button>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs space-y-4">
+                      <h3 className="text-sm font-bold text-stone-900">Distribusi Utilisasi 5 Fakultas:</h3>
+                      <div className="space-y-3">
+                        {['FK', 'FF', 'FKG', 'FIK', 'FKM'].map((f) => {
+                          const count = reservations.filter((r) => r.userFaculty === f).length;
+                          const pct = Math.round((count / reservations.length) * 100);
+                          return (
+                            <div key={f} className="space-y-1 text-xs">
+                              <div className="flex justify-between font-bold">
+                                <span>{f} • {FACULTIES_DATA[f]?.name}</span>
+                                <span>{count} Peminjaman ({pct}%)</span>
+                              </div>
+                              <div className="w-full h-2.5 rounded-full bg-stone-100 overflow-hidden">
+                                <div className="h-full bg-emerald-700 rounded-full" style={{ width: `${Math.max(pct, 5)}%` }} />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+              </div>
+            </main>
+          </div>
+
+          {/* DETAIL & TU DECISION MODAL */}
+          {activeModalReq && (
+            <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+                <div className="flex items-start justify-between border-b pb-3">
+                  <div>
+                    <span className="font-mono text-xs font-bold text-stone-400">{activeModalReq.reservationCode}</span>
+                    <h3 className="text-base font-bold text-stone-900">{activeModalReq.title}</h3>
+                  </div>
+                  <button onClick={() => setActiveModalReq(null)} className="text-stone-400 hover:text-stone-800 text-lg font-bold">✕</button>
+                </div>
+
+                <div className="bg-stone-50 p-3 rounded-xl text-xs space-y-1">
+                  <div><strong>Pemohon:</strong> {(isTUAdmin || activeModalReq.userId === currentUser.id) ? activeModalReq.userName : `Delegasi ${activeModalReq.userFaculty}`} ({activeModalReq.userFaculty})</div>
+                  <div><strong>NPM:</strong> {(isTUAdmin || activeModalReq.userId === currentUser.id) ? activeModalReq.userNPM : '**********'} • <strong>No. HP:</strong> {(isTUAdmin || activeModalReq.userId === currentUser.id) ? activeModalReq.userPhone : '***-****-****'}</div>
+                  <div><strong>Ruangan:</strong> {activeModalReq.facilityName} ({activeModalReq.facilityBuilding})</div>
+                  <div><strong>Waktu:</strong> {new Date(activeModalReq.startTime).toLocaleString('id-ID')} - {new Date(activeModalReq.endTime).toLocaleTimeString('id-ID')} WIB</div>
+                  {activeModalReq.status === 'revision_requested' && activeModalReq.adminNotes && (
+                    <div className="mt-2 p-2 rounded-lg bg-orange-100 border border-orange-300 text-orange-950 font-bold">
+                      ⚠️ Catatan Revisi TU: "{activeModalReq.adminNotes}"
+                    </div>
+                  )}
+                </div>
+
+                {/* Documents */}
+                <div>
+                  <h4 className="text-xs font-bold uppercase text-stone-400 mb-1.5">Berkas Surat Izin (Tersimpan Privat):</h4>
+                  {(!isTUAdmin && activeModalReq.userId !== currentUser.id) ? (
+                    <p className="text-xs text-stone-500 italic p-2 bg-stone-50 rounded-lg border border-stone-200">
+                      🔒 Berkas privat hanya dapat diakses oleh pemohon dan Administrator TU Pusat.
+                    </p>
+                  ) : activeModalReq.documents.length === 0 ? (
+                    <p className="text-xs text-stone-400 italic">Tidak ada berkas.</p>
+                  ) : (
+                    activeModalReq.documents.map((d) => (
+                      <div key={d.id} className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-xs flex justify-between items-center">
+                        <span className="font-bold text-emerald-950">📄 {d.name}</span>
+                        <span className="text-[10px] text-emerald-800 font-mono">Terenkripsi RLS (Private)</span>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* Admin Note Input */}
+                {isTUAdmin && (activeModalReq.status === 'pending' || activeModalReq.status === 'revision_requested') && (
+                  <div>
+                    <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Catatan Keputusan TU / Instruksi Revisi:</label>
+                    <textarea
+                      rows={2}
+                      value={adminNoteInput}
+                      onChange={(e) => setAdminNoteInput(e.target.value)}
+                      placeholder="Masukkan catatan keputusan untuk pengaju..."
+                      className="w-full p-2.5 text-xs bg-stone-50 border border-stone-300 rounded-xl"
+                    />
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div className="flex flex-wrap justify-end gap-2 pt-3 border-t">
+                  <button
+                    onClick={() => setActiveModalReq(null)}
+                    className="px-4 py-2 rounded-xl border font-bold text-xs hover:bg-stone-50"
+                  >
+                    Tutup
+                  </button>
+
+                  {/* Resubmit button for applicant */}
+                  {activeModalReq.userId === currentUser.id && activeModalReq.status === 'revision_requested' && (
+                    <button
+                      onClick={() => {
+                        setActiveRevisionReq(activeModalReq);
+                        setActiveModalReq(null);
+                      }}
+                      className="px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs"
+                    >
+                      Unggah Berkas Revisi & Ajukan Ulang
+                    </button>
+                  )}
+
+                  {isTUAdmin && (activeModalReq.status === 'pending' || activeModalReq.status === 'revision_requested') && (
+                    <>
+                      <button
+                        onClick={() => handleDecision(activeModalReq.id, 'rejected')}
+                        className="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs"
+                      >
+                        Tolak
+                      </button>
+                      <button
+                        onClick={() => handleDecision(activeModalReq.id, 'revision_requested')}
+                        className="px-3.5 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs"
+                      >
+                        Minta Revisi
+                      </button>
+                      <button
+                        onClick={() => handleDecision(activeModalReq.id, 'approved')}
+                        className="px-4 py-2 rounded-xl bg-[#1B4332] hover:bg-[#132A13] text-white font-bold text-xs"
+                      >
+                        Setujui Permohonan
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* OFFICIAL RECEIPT MODAL */}
+          {activeReceiptReq && (
+            <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+                <div className="text-center border-b pb-3 space-y-0.5">
+                  <h4 className="text-xs font-black uppercase text-stone-900">UNIVERSITAS INDONESIA</h4>
+                  <h5 className="text-[11px] font-bold text-emerald-900 uppercase">TATA USAHA PUSAT RIK UI</h5>
+                  <p className="text-[10px] text-stone-400">Surat Bukti Izin Penggunaan Fasilitas</p>
+                </div>
+
+                <div className="space-y-1.5 text-xs">
+                  <div><strong>Nomor Tiket:</strong> {activeReceiptReq.reservationCode}</div>
+                  <div><strong>Nama Acara:</strong> {activeReceiptReq.title}</div>
+                  <div><strong>Pemohon:</strong> {activeReceiptReq.userName} ({activeReceiptReq.userFaculty})</div>
+                  <div><strong>Ruangan:</strong> {activeReceiptReq.facilityName}</div>
+                  <div><strong>Waktu:</strong> {new Date(activeReceiptReq.startTime).toLocaleDateString('id-ID')}, {new Date(activeReceiptReq.startTime).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} WIB</div>
+                  <div className="text-emerald-800 font-bold">✓ Status: Disetujui Resmi</div>
+                </div>
+
+                <div className="pt-3 border-t flex justify-end gap-2">
+                  <button
+                    onClick={() => setActiveReceiptReq(null)}
+                    className="px-4 py-2 rounded-xl border text-xs font-bold hover:bg-stone-50"
+                  >
+                    Tutup
+                  </button>
+                  <button
+                    onClick={() => window.print()}
+                    className="px-4 py-2 rounded-xl bg-[#1B4332] text-white font-bold text-xs hover:bg-[#132A13]"
+                  >
+                    Cetak Surat PDF
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* REVISION RESUBMISSION MODAL */}
+          {activeRevisionReq && (
+            <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+                <div className="border-b pb-3">
+                  <span className="text-[10px] font-bold uppercase text-orange-700">Perbaikan Berkas Permohonan</span>
+                  <h3 className="text-base font-bold text-stone-900">{activeRevisionReq.reservationCode} - {activeRevisionReq.title}</h3>
+                </div>
+
+                <div className="p-3 rounded-xl bg-orange-50 border border-orange-200 text-xs text-orange-950">
+                  <strong>Catatan Revisi dari TU:</strong>
+                  <p className="mt-0.5 italic">"{activeRevisionReq.adminNotes || 'Harap perbaiki dokumen perizinan.'}"</p>
+                </div>
+
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  const fileInput = e.target.elements.revFile;
+                  const file = fileInput.files[0];
+                  if (!file) {
+                    alert('Harap pilih berkas PDF yang telah diperbaiki!');
+                    return;
+                  }
+                  if (!file.name.toLowerCase().endsWith('.pdf')) {
+                    alert('Format berkas harus PDF!');
+                    return;
+                  }
+                  if (file.size > 10 * 1024 * 1024) {
+                    alert('Ukuran berkas melebihi 10MB!');
+                    return;
+                  }
+                  const note = e.target.elements.revNote.value;
+                  handleResubmitRevision(activeRevisionReq.id, file.name, note);
+                }} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Unggah Berkas PDF Hasil Revisi:</label>
+                    <input
+                      type="file"
+                      name="revFile"
+                      required
+                      accept=".pdf,application/pdf"
+                      className="w-full text-xs text-stone-600 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-800 hover:file:bg-emerald-100 cursor-pointer"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Penjelasan Perbaikan untuk TU:</label>
+                    <textarea
+                      name="revNote"
+                      rows={2}
+                      placeholder="Misal: Sudah melampirkan tanda tangan Wadek 1 dan revisi jadwal..."
+                      className="w-full p-2.5 text-xs bg-stone-50 border border-stone-300 rounded-xl"
+                    />
+                  </div>
+
+                  <div className="pt-3 border-t flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setActiveRevisionReq(null)}
+                      className="px-4 py-2 rounded-xl border text-xs font-bold hover:bg-stone-50"
+                    >
+                      Batal
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 rounded-xl bg-[#1B4332] text-white font-bold text-xs hover:bg-[#132A13]"
+                    >
+                      Kirim Ulang ke TU Pusat
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* PROFILE MANAGEMENT MODAL */}
+          {showProfileModal && (
+            <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+                <div className="flex items-start justify-between border-b pb-3">
+                  <div>
+                    <h3 className="text-base font-bold text-stone-900">Profil Pengguna Fakultas</h3>
+                    <p className="text-xs text-stone-500">Kelola identitas dan kontak perwakilan fakultas.</p>
+                  </div>
+                  <button onClick={() => setShowProfileModal(false)} className="text-stone-400 hover:text-stone-800 text-lg font-bold">✕</button>
+                </div>
+
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  handleUpdateProfile({
+                    name: e.target.elements.name.value,
+                    phone: e.target.elements.phone.value,
+                    identityNumber: e.target.elements.npm.value,
+                    organization: e.target.elements.org.value,
+                  });
+                }} className="space-y-3 text-xs">
+                  <div>
+                    <label className="block font-bold text-stone-700 uppercase mb-1">Nama Lengkap:</label>
+                    <input
+                      name="name"
+                      defaultValue={currentUser.name}
+                      required
+                      className="w-full p-2.5 bg-stone-50 border border-stone-300 rounded-xl font-medium"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block font-bold text-stone-700 uppercase mb-1">Fakultas:</label>
+                      <input
+                        disabled
+                        value={currentUser.faculty}
+                        className="w-full p-2.5 bg-stone-100 border border-stone-200 rounded-xl font-bold text-stone-600"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-bold text-stone-700 uppercase mb-1">NPM / NIP:</label>
+                      <input
+                        name="npm"
+                        defaultValue={currentUser.identityNumber}
+                        required
+                        className="w-full p-2.5 bg-stone-50 border border-stone-300 rounded-xl font-medium"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-stone-700 uppercase mb-1">Nomor WhatsApp / HP:</label>
+                    <input
+                      name="phone"
+                      defaultValue={currentUser.phone}
+                      required
+                      className="w-full p-2.5 bg-stone-50 border border-stone-300 rounded-xl font-medium"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-stone-700 uppercase mb-1">Lembaga / Organisasi:</label>
+                    <input
+                      name="org"
+                      defaultValue={currentUser.organization}
+                      required
+                      className="w-full p-2.5 bg-stone-50 border border-stone-300 rounded-xl font-medium"
+                    />
+                  </div>
+
+                  <div className="pt-3 border-t flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowProfileModal(false)}
+                      className="px-4 py-2 rounded-xl border font-bold hover:bg-stone-50"
+                    >
+                      Batal
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 rounded-xl bg-[#1B4332] text-white font-bold hover:bg-[#132A13]"
+                    >
+                      Simpan Perubahan
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* AUTHENTICATION / REGISTRATION MODAL */}
+          {showAuthModal && (
+            <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+                <div className="flex items-start justify-between border-b pb-3">
+                  <div>
+                    <h3 className="text-base font-bold text-stone-900">
+                      {showAuthModal === 'register' ? 'Registrasi Pengguna Baru' : 'Masuk ke RIK SpaceHub'}
+                    </h3>
+                    <p className="text-xs text-stone-500">Khusus sivitas akademika 5 fakultas RIK UI</p>
+                  </div>
+                  <button onClick={() => setShowAuthModal(null)} className="text-stone-400 hover:text-stone-800 text-lg font-bold">✕</button>
+                </div>
+
+                <div className="flex border-b text-xs">
+                  <button
+                    onClick={() => setShowAuthModal('register')}
+                    className={`flex-1 py-2 font-bold text-center border-b-2 ${showAuthModal === 'register' ? 'border-[#1B4332] text-[#1B4332]' : 'border-transparent text-stone-400'}`}
+                  >
+                    Daftar Akun Baru
+                  </button>
+                  <button
+                    onClick={() => setShowAuthModal('login')}
+                    className={`flex-1 py-2 font-bold text-center border-b-2 ${showAuthModal === 'login' ? 'border-[#1B4332] text-[#1B4332]' : 'border-transparent text-stone-400'}`}
+                  >
+                    Masuk Akun
+                  </button>
+                </div>
+
+                {showAuthModal === 'register' ? (
+                  <form onSubmit={(e) => {
+                    e.preventDefault();
+                    const fd = e.target.elements;
+                    handleRegister({
+                      name: fd.regName.value,
+                      email: fd.regEmail.value,
+                      faculty: fd.regFaculty.value,
+                      identityNumber: fd.regNpm.value,
+                      phone: fd.regPhone.value,
+                      organization: fd.regOrg.value,
+                    });
+                  }} className="space-y-3 text-xs">
+                    <div>
+                      <label className="block font-bold text-stone-700 uppercase mb-1">Nama Lengkap:</label>
+                      <input name="regName" required placeholder="Contoh: Muhammad Farhan" className="w-full p-2.5 bg-stone-50 border border-stone-300 rounded-xl" />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block font-bold text-stone-700 uppercase mb-1">Fakultas:</label>
+                        <select name="regFaculty" className="w-full p-2.5 bg-stone-50 border border-stone-300 rounded-xl font-bold">
+                          <option value="FK">FK - Kedokteran</option>
+                          <option value="FF">FF - Farmasi</option>
+                          <option value="FKG">FKG - Gigi</option>
+                          <option value="FIK">FIK - Keperawatan</option>
+                          <option value="FKM">FKM - Kesmas</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block font-bold text-stone-700 uppercase mb-1">NPM:</label>
+                        <input name="regNpm" required placeholder="230601..." className="w-full p-2.5 bg-stone-50 border border-stone-300 rounded-xl" />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-stone-700 uppercase mb-1">Email UI:</label>
+                      <input name="regEmail" type="email" required placeholder="nama@ui.ac.id" className="w-full p-2.5 bg-stone-50 border border-stone-300 rounded-xl" />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-stone-700 uppercase mb-1">No. WhatsApp / HP:</label>
+                      <input name="regPhone" required placeholder="0812-..." className="w-full p-2.5 bg-stone-50 border border-stone-300 rounded-xl" />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-stone-700 uppercase mb-1">Lembaga / Organisasi:</label>
+                      <input name="regOrg" required placeholder="BEM / HMD / Tim Ilmiah..." className="w-full p-2.5 bg-stone-50 border border-stone-300 rounded-xl" />
+                    </div>
+
+                    <div className="pt-3 border-t flex justify-end gap-2">
+                      <button type="button" onClick={() => setShowAuthModal(null)} className="px-4 py-2 rounded-xl border font-bold hover:bg-stone-50">Batal</button>
+                      <button type="submit" className="px-5 py-2 rounded-xl bg-[#1B4332] text-white font-bold hover:bg-[#132A13]">Daftar Akun</button>
+                    </div>
+                  </form>
+                ) : (
+                  <form onSubmit={(e) => {
+                    e.preventDefault();
+                    handleLogin(e.target.elements.logEmail.value);
+                  }} className="space-y-3 text-xs">
+                    <div>
+                      <label className="block font-bold text-stone-700 uppercase mb-1">Email Pengguna:</label>
+                      <input name="logEmail" type="email" required placeholder="nama@ui.ac.id" className="w-full p-2.5 bg-stone-50 border border-stone-300 rounded-xl" />
+                    </div>
+                    <div>
+                      <label className="block font-bold text-stone-700 uppercase mb-1">Kata Sandi:</label>
+                      <input type="password" required defaultValue="password123" className="w-full p-2.5 bg-stone-50 border border-stone-300 rounded-xl" />
+                    </div>
+                    <div className="pt-3 border-t flex justify-end gap-2">
+                      <button type="button" onClick={() => setShowAuthModal(null)} className="px-4 py-2 rounded-xl border font-bold hover:bg-stone-50">Batal</button>
+                      <button type="submit" className="px-5 py-2 rounded-xl bg-[#1B4332] text-white font-bold hover:bg-[#132A13]">Masuk</button>
+                    </div>
+                  </form>
+                )}
+              </div>
+            </div>
+          )}
+
+        </div>
+      );
+    }
+
+    // --- SUB-COMPONENT: RESERVATION MULTI-STEP WIZARD ---
+    function NewReservationForm({ facilities, equipment, existingReservations, onSubmit, onCancel }) {
+      const [facilityId, setFacilityId] = useState(facilities[0]?.id || '');
+      const [date, setDate] = useState(() => {
+        const d = new Date();
+        d.setDate(d.getDate() + 2);
+        return d.toISOString().split('T')[0];
+      });
+      const [startTime, setStartTime] = useState('09:00');
+      const [endTime, setEndTime] = useState('12:00');
+      const [title, setTitle] = useState('');
+      const [description, setDescription] = useState('');
+      const [selectedEquipment, setSelectedEquipment] = useState({});
+      const [uploadedFile, setUploadedFile] = useState(null);
+
+      // Conflict Checker: Hard block on approved
+      const approvedConflict = useMemo(() => {
+        const start = new Date(`${date}T${startTime}:00`).getTime();
+        const end = new Date(`${date}T${endTime}:00`).getTime();
+        return existingReservations.find((r) => {
+          if (r.facilityId !== facilityId) return false;
+          if (r.status !== 'approved') return false;
+          const rStart = new Date(r.startTime).getTime();
+          const rEnd = new Date(r.endTime).getTime();
+          return start < rEnd && end > rStart;
+        });
+      }, [facilityId, date, startTime, endTime, existingReservations]);
+
+      // Soft advisory on pending
+      const pendingWarning = useMemo(() => {
+        const start = new Date(`${date}T${startTime}:00`).getTime();
+        const end = new Date(`${date}T${endTime}:00`).getTime();
+        return existingReservations.find((r) => {
+          if (r.facilityId !== facilityId) return false;
+          if (r.status !== 'pending') return false;
+          const rStart = new Date(r.startTime).getTime();
+          const rEnd = new Date(r.endTime).getTime();
+          return start < rEnd && end > rStart;
+        });
+      }, [facilityId, date, startTime, endTime, existingReservations]);
+
+      // Equipment availability calculation
+      const equipmentAvailability = useMemo(() => {
+        const start = new Date(`${date}T${startTime}:00`).getTime();
+        const end = new Date(`${date}T${endTime}:00`).getTime();
+
+        const overlappingApproved = existingReservations.filter((r) => {
+          if (r.status !== 'approved') return false;
+          const rStart = new Date(r.startTime).getTime();
+          const rEnd = new Date(r.endTime).getTime();
+          return start < rEnd && end > rStart;
+        });
+
+        const statusMap = {};
+        for (const eq of equipment) {
+          let committed = 0;
+          for (const res of overlappingApproved) {
+            const item = res.equipment?.find((e) => e.equipmentId === eq.id);
+            if (item) committed += (item.quantityApproved ?? item.quantityRequested);
+          }
+          const availableInWindow = Math.max(0, eq.totalQuantity - committed);
+          statusMap[eq.id] = {
+            total: eq.totalQuantity,
+            committed,
+            availableInWindow,
+          };
+        }
+        return statusMap;
+      }, [date, startTime, endTime, existingReservations, equipment]);
+
+      // Check for equipment overbooking
+      const overbookingError = useMemo(() => {
+        for (const [eqId, qty] of Object.entries(selectedEquipment)) {
+          if (qty > 0) {
+            const avail = equipmentAvailability[eqId]?.availableInWindow ?? 0;
+            if (qty > avail) {
+              const eq = equipment.find((e) => e.id === eqId);
+              return `Permintaan untuk "${eq?.name}" (${qty} unit) melebihi kuota tersedia untuk jam ini (${avail} unit).`;
+            }
+          }
+        }
+        return null;
+      }, [selectedEquipment, equipmentAvailability, equipment]);
+
+      const handleEquipmentChange = (eqId, qty) => {
+        const num = Math.max(0, parseInt(qty, 10) || 0);
+        setSelectedEquipment((prev) => ({
+          ...prev,
+          [eqId]: num,
+        }));
+      };
+
+      const handleFileUpload = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (!file.name.toLowerCase().endsWith('.pdf')) {
+          alert('Format berkas tidak valid! Hanya dokumen format PDF yang diizinkan oleh sistem.');
+          e.target.value = '';
+          return;
+        }
+
+        if (file.size > 10 * 1024 * 1024) {
+          alert('Ukuran berkas melebihi batas maksimal 10 MB!');
+          e.target.value = '';
+          return;
+        }
+
+        setUploadedFile({
+          name: file.name,
+          sizeBytes: file.size,
+          type: 'application/pdf',
+        });
+      };
+
+      const handleFormSubmit = (e) => {
+        e.preventDefault();
+        if (!title.trim()) {
+          alert('Judul kegiatan wajib diisi!');
+          return;
+        }
+        if (approvedConflict) {
+          alert('Jadwal bentrok dengan acara resmi yang sudah disetujui! Silakan ubah jam atau ruangan.');
+          return;
+        }
+        if (overbookingError) {
+          alert(`Pencegahan Overbooking Sarpras: ${overbookingError}`);
+          return;
+        }
+
+        const selFac = facilities.find((f) => f.id === facilityId);
+        const eqList = Object.entries(selectedEquipment)
+          .filter(([_, q]) => q > 0)
+          .map(([eqId, q]) => {
+            const eq = equipment.find((e) => e.id === eqId);
+            return {
+              equipmentId: eqId,
+              equipmentName: eq?.name || 'Peralatan',
+              quantityRequested: q,
+            };
+          });
+
+        const docs = uploadedFile ? [
+          {
+            id: `doc_${Date.now()}`,
+            name: uploadedFile.name,
+            sizeBytes: uploadedFile.sizeBytes,
+            type: 'application/pdf',
+          }
+        ] : [
+          {
+            id: `doc_${Date.now()}`,
+            name: `Surat_Pengantar_${title.replace(/\\s+/g, '_')}.pdf`,
+            sizeBytes: 1540000,
+            type: 'application/pdf',
+          }
+        ];
+
+        onSubmit({
+          facilityId,
+          facilityName: selFac.name,
+          facilityBuilding: `${selFac.building} (Lt. ${selFac.floor})`,
+          startTime: new Date(`${date}T${startTime}:00`).toISOString(),
+          endTime: new Date(`${date}T${endTime}:00`).toISOString(),
+          title,
+          description,
+          eventType: 'student_org',
+          expectedAttendees: 50,
+          equipment: eqList,
+          documents: docs,
+        });
+      };
+
+      return (
+        <form onSubmit={handleFormSubmit} className="bg-white p-6 sm:p-8 rounded-2xl border border-stone-200 shadow-xs space-y-6">
+          <div className="border-b pb-4">
+            <h3 className="text-base font-bold text-stone-900">Formulir Permohonan Peminjaman Ruang RIK</h3>
+            <p className="text-xs text-stone-500 mt-0.5">Sistem otomatis memverifikasi bentrok jadwal dan ketersediaan kuota sarpras antar 5 fakultas.</p>
+          </div>
+
+          {/* Room & Date */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Pilih Ruangan RIK</label>
+              <select
+                value={facilityId}
+                onChange={(e) => setFacilityId(e.target.value)}
+                className="w-full p-2.5 bg-stone-50 border border-stone-300 rounded-xl text-xs font-semibold"
+              >
+                {facilities.map((f) => (
+                  <option key={f.id} value={f.id}>{f.name} ({f.building} - Max {f.capacity} Org)</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Tanggal Acara</label>
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="w-full p-2.5 bg-stone-50 border border-stone-300 rounded-xl text-xs font-semibold"
+              />
+            </div>
+          </div>
+
+          {/* Time */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Jam Mulai</label>
+              <input
+                type="time"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                className="w-full p-2 bg-stone-50 border border-stone-300 rounded-xl text-xs font-semibold"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Jam Selesai</label>
+              <input
+                type="time"
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+                className="w-full p-2 bg-stone-50 border border-stone-300 rounded-xl text-xs font-semibold"
+              />
+            </div>
+          </div>
+
+          {/* Realtime Conflict Alerts */}
+          {approvedConflict ? (
+            <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-300 text-rose-900 text-xs">
+              <strong>⛔ Peringatan Bentrok Jadwal (Double-Booking Blocked):</strong>
+              <p className="mt-1">
+                Ruangan ini sudah <strong>disetujui resmi</strong> untuk: <em>"{approvedConflict.title}"</em> ({new Date(approvedConflict.startTime).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})} - {new Date(approvedConflict.endTime).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})} WIB). Anda tidak dapat mengirim permohonan pada slot ini.
+              </p>
+            </div>
+          ) : pendingWarning ? (
+            <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs">
+              <strong>ℹ️ Catatan Jadwal Bersaing:</strong>
+              <p className="mt-1">
+                Terdapat permohonan lain yang sedang menunggu review TU pada jam ini (<em>"{pendingWarning.title}"</em>). Anda tetap dapat mengajukan permohonan ini untuk dipertimbangkan oleh TU Pusat.
+              </p>
+            </div>
+          ) : (
+            <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-900 text-xs">
+              ✓ Jadwal tersedia dan aman untuk dipinjam.
+            </div>
+          )}
+
+          {/* Title & Description */}
+          <div>
+            <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Nama / Tajuk Kegiatan</label>
+            <input
+              type="text"
+              required
+              placeholder="Contoh: Diskusi Terbuka BEM Farmasi & Keperawatan 2026"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full p-2.5 bg-stone-50 border border-stone-300 rounded-xl text-xs font-semibold"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Tujuan & Deskripsi Singkat</label>
+            <textarea
+              rows={2}
+              placeholder="Tuliskan tujuan kegiatan dan susunan panitia..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full p-2.5 bg-stone-50 border border-stone-300 rounded-xl text-xs"
+            />
+          </div>
+
+          {/* Equipment Selection with Realtime Quotas */}
+          <div className="border rounded-2xl p-4 bg-stone-50/70 border-stone-200 space-y-3">
+            <div className="flex items-center justify-between border-b pb-2">
+              <div>
+                <h4 className="text-xs font-bold text-stone-900 uppercase">Peminjaman Sarana & Peralatan (Opsional)</h4>
+                <p className="text-[11px] text-stone-500">Sistem memvalidasi ketersediaan stok fisik gudang TU secara real-time.</p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              {equipment.map((eq) => {
+                const availInfo = equipmentAvailability[eq.id] || { availableInWindow: eq.availableQuantity, committed: 0, total: eq.totalQuantity };
+                const currentReq = selectedEquipment[eq.id] || 0;
+                const isOver = currentReq > availInfo.availableInWindow;
+
+                return (
+                  <div key={eq.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-xl bg-white border border-stone-200 text-xs">
+                    <div>
+                      <span className="font-bold text-stone-900">{eq.name}</span>
+                      <div className="text-[10px] text-stone-500 mt-0.5">
+                        Total Gudang: {availInfo.total} Unit • Terpakai di Jam Ini: {availInfo.committed} Unit • <strong className="text-emerald-800">Tersedia: {availInfo.availableInWindow} Unit</strong>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 self-end sm:self-center">
+                      <label className="text-[11px] text-stone-500">Jumlah Pinjam:</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max={availInfo.total}
+                        value={currentReq}
+                        onChange={(e) => handleEquipmentChange(eq.id, e.target.value)}
+                        className={`w-16 p-1 text-center font-bold border rounded-lg ${
+                          isOver ? 'border-rose-500 bg-rose-50 text-rose-900' : 'border-stone-300 bg-stone-50'
+                        }`}
+                      />
+                      <span className="text-[10px] text-stone-400">Unit</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {overbookingError && (
+              <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-300 text-rose-900 text-xs font-bold">
+                ⚠️ {overbookingError}
+              </div>
+            )}
+          </div>
+
+          {/* PDF Document Upload */}
+          <div className="border rounded-2xl p-4 bg-stone-50/70 border-stone-200 space-y-3">
+            <div>
+              <h4 className="text-xs font-bold text-stone-900 uppercase">Unggah Dokumen Perizinan (PDF Khusus)</h4>
+              <p className="text-[11px] text-stone-500">Lampirkan surat izin atau proposal bertanda tangan pimpinan fakultas (Maks. 10MB, format .PDF).</p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              <input
+                type="file"
+                accept=".pdf,application/pdf"
+                onChange={handleFileUpload}
+                className="text-xs text-stone-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-800 hover:file:bg-emerald-100 cursor-pointer"
+              />
+            </div>
+
+            {uploadedFile ? (
+              <div className="flex items-center justify-between p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="text-base">📄</span>
+                  <div>
+                    <span className="font-bold text-emerald-950">{uploadedFile.name}</span>
+                    <span className="text-[10px] text-emerald-700 ml-2">({(uploadedFile.sizeBytes / 1024).toFixed(0)} KB)</span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setUploadedFile(null)}
+                  className="text-rose-600 hover:text-rose-800 font-bold text-xs"
+                >
+                  ✕ Hapus
+                </button>
+              </div>
+            ) : (
+              <p className="text-[11px] text-stone-400 italic">
+                * Jika belum memilih berkas fisik, sistem simulasi akan menyematkan berkas PDF proposal default otomatis saat pengiriman.
+              </p>
+            )}
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="px-4 py-2 rounded-xl border text-xs font-bold hover:bg-stone-50"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              disabled={Boolean(approvedConflict) || Boolean(overbookingError)}
+              className="px-5 py-2.5 rounded-xl bg-[#1B4332] hover:bg-[#132A13] disabled:opacity-40 text-white font-bold text-xs shadow-md transition-all"
+            >
+              Kirim Permohonan ke TU Pusat
+            </button>
+          </div>
+        </form>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
