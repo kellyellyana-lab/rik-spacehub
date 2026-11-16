@@ -1,0 +1,26 @@
+RIK SPACEHUB - PROJECT DIPERBAIKI
+
+Penyebab error awal: saat upload ke GitHub, isi folder src/ ikut terpisah dan .tsx menjadi file di root. Source asli menggunakan src/context, src/pages, src/services, dll.
+
+Perbaikan:
+- Struktur src/ asli dipertahankan
+- TypeScript Supabase null checking diperbaiki
+- Deklarasi vite/client ditambahkan
+- Workflow GitHub Pages diperbarui agar cocok untuk Source: GitHub Actions
+- Vite base '/rik-spacehub/' dan HashRouter tetap digunakan
+
+CARA UPLOAD AMAN MELALUI GITHUB DESKTOP:
+1. Extract zip.
+2. Di GitHub Desktop: File > Clone repository > URL:
+   https://github.com/kellyelyana-lab/rik-spacehub
+3. Pilih folder tujuan baru (bukan folder ZIP).
+4. Salin semua ISI folder RIK SpaceHub dari zip ke folder repo hasil clone, termasuk folder src dan .github, lalu Replace existing files.
+5. Pastikan .github/workflows/deploy.yml dan src/main.tsx ada dalam folder yang benar.
+6. Di repo hasil clone, hapus file-file .tsx/.ts yang terlanjur ada di folder UTAMA. Jangan hapus src/ atau file config di root.
+7. GitHub Desktop: commit semua perubahan dengan judul "Fix project folder structure and deploy" lalu Push origin.
+8. GitHub Settings > Pages > Source: GitHub Actions.
+9. Lihat tab Actions untuk build dan deploy terbaru.
+
+CATATAN KEAMANAN: ZIP ASLI mengandung GitHub token dalam .git/config. Token harus dicabut/di-rotate di GitHub Settings > Developer settings > Personal access tokens. ZIP PERBAIKAN TIDAK berisi .git, token maupun node_modules.
+
+CATATAN FITUR: Tanpa GitHub Secrets VITE_SUPABASE_URL dan VITE_SUPABASE_ANON_KEY, aplikasi berjalan dalam mode DEMO (lokal). GitHub Pages tidak menyediakan backend database.
