@@ -1,0 +1,53 @@
+name: Deploy RIK SpaceHub to GitHub Pages
+
+# Trigger: runs automatically on every push to main, or manually from Actions tab
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+# Allow the workflow to write to the repository (needed to push the gh-pages branch)
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Check out the full source code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Install Node.js 20 (LTS) and cache npm dependencies
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # 3. Install all project dependencies from package.json
+      - name: Install dependencies
+        run: npm install
+
+      # 4. Build the production bundle.
+      #    Supabase credentials are read from GitHub Secrets (Settings → Secrets → Actions).
+      #    If secrets are not set, the app automatically falls back to Demo Mode — this is safe.
+      #    NEVER hardcode real credentials here.
+      - name: Build project
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+
+      # 5. Deploy the built output (./dist) to the gh-pages branch.
+      #    GitHub Pages will serve this branch at:
+      #    https://kellyellyana-lab.github.io/rik-spacehub/
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          publish_branch: gh-pages
+          force_orphan: true
